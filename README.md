@@ -1,11 +1,11 @@
 # Video Subtitle MVP
 
-A minimal web app for automatic video subtitling with client-side Whisper integration.
+A minimal web app for automatic video subtitling.
 
 ## Features
 
 - Upload video files (MP4, WebM, MOV)
-- Generate subtitles using mock transcription (Whisper-ready architecture)
+- Generate subtitles using mock transcription
 - Edit subtitle text
 - Export subtitles as SRT file
 - Client-side only (no backend required)
@@ -32,7 +32,7 @@ npm run dev
 
 1. **Upload**: Drop a video file or click to browse
 2. **Validate**: Files are checked for format, size (max 50MB), and duration (max 5 minutes)
-3. **Generate**: Click "Generate Subtitles" to create mock subtitles
+3. **Generate**: Click "Generate Subtitles" to create subtitles
 4. **Edit**: Modify subtitle text directly in the editor
 5. **Export**: Click "Download SRT" to save the subtitle file
 
@@ -51,30 +51,42 @@ npm run dev
 │   ├── types.ts          # TypeScript interfaces
 │   ├── utils.ts          # Time formatting
 │   ├── validators.ts     # File validation
-│   ├── mockTranscriber.ts # Mock + Whisper placeholder
-│   ├── srtExporter.ts    # SRT generation
-│   └── transcriber.ts    # Integration point
+│   ├── mockTranscriber.ts # Mock transcription
+│   └── srtExporter.ts    # SRT generation
 ├── public/
 │   └── favicon.svg       # App favicon
 ├── package.json
 └── README.md
 ```
 
-## Adding Real Whisper Transcription
+## Whisper Integration
 
-The app uses a mock transcriber by default. To integrate real Whisper:
+The app currently uses mock transcription. To integrate real Whisper:
 
-1. Install transformers.js:
+### Option 1: Vite SPA (Recommended)
+
+Create a separate Vite-based React app for the transcription:
+
+```bash
+npm create vite@latest whisper-app -- --template react-ts
+cd whisper-app
+npm install @huggingface/transformers
+# Implement using lib/whisperTranscriber.full.ts as reference
+```
+
+### Option 2: Static Export + CDN
+
+1. Build as static export:
    ```bash
-   npm install @huggingface/transformers
+   npm run build
+   # Serve the out/ directory
    ```
 
-2. Implement `WhisperTranscriber` in `lib/mockTranscriber.ts`
+2. Load transformers.js from CDN in your HTML
 
-3. Update `lib/transcriber.ts` to use the real transcriber:
-   ```typescript
-   let transcriber: Transcriber = new WhisperTranscriber();
-   ```
+### Option 3: Standalone Node.js Script
+
+Use the transcription logic in a Node.js script with proper WASM support.
 
 ## Build for Production
 

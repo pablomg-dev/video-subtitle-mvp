@@ -9,13 +9,17 @@ import { MockTranscriber } from "../lib/mockTranscriber";
 import { downloadSRT } from "../lib/srtExporter";
 import { checkDevicePerformance } from "../lib/validators";
 
+type TranscriptionStatus = "idle" | "loading_model" | "processing" | "done" | "error";
+
 export default function Home() {
   const [videoFile, setVideoFile] = useState<VideoFile | null>(null);
   const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptionStatus, setTranscriptionStatus] = useState<TranscriptionStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [showSlowDeviceWarning, setShowSlowDeviceWarning] = useState(false);
+  const [useMockMode, setUseMockMode] = useState(true); // Default to mock mode
 
   useEffect(() => {
     if (checkDevicePerformance() === false) {
@@ -32,7 +36,6 @@ export default function Home() {
   }, [videoFile]);
 
   const handleFileSelect = useCallback((file: File, duration: number) => {
-    // Clean up previous video URL
     if (videoFile?.url) {
       URL.revokeObjectURL(videoFile.url);
     }
@@ -41,6 +44,7 @@ export default function Home() {
     setVideoFile({ file, url, duration });
     setSubtitles([]);
     setError(null);
+    setTranscriptionStatus("idle");
   }, [videoFile]);
 
   const handleError = useCallback((message: string) => {
@@ -52,13 +56,20 @@ export default function Home() {
 
     setIsTranscribing(true);
     setError(null);
+    setTranscriptionStatus("loading_model");
 
     try {
-      const transcriber = new MockTranscriber();
-      const result = await transcriber.transcribe(videoFile.url, videoFile.duration);
+      // Always use mock for now - see lib/whisperTranscriber.ts for Whisper integration
+      setTranscriptionStatus("processing");
+      const mock = new MockTranscriber();
+      const result = await mock.transcribe(videoFile.url, videoFile.duration);
+      
       setSubtitles(result.subtitles);
+      setTranscriptionStatus("done");
     } catch (err) {
+      console.error("Transcription error:", err);
       setError("Failed to generate subtitles. Please try again.");
+      setTranscriptionStatus("error");
     } finally {
       setIsTranscribing(false);
     }
@@ -78,6 +89,19 @@ export default function Home() {
     setCurrentTime(time);
   }, []);
 
+  const getButtonText = () => {
+    if (!isTranscribing) return "Generate Subtitles";
+    
+    switch (transcriptionStatus) {
+      case "loading_model":
+        return "Loading AI model...";
+      case "processing":
+        return "Processing audio...";
+      default:
+        return "Generating...";
+    }
+  };
+
   return (
     <main className="min-h-screen py-8 px-4">
       <div className="max-w-3xl mx-auto space-y-8">
@@ -92,14 +116,19 @@ export default function Home() {
 
         {showSlowDeviceWarning && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-yellow-800 dark:text-yellow-200 text-sm">
-            Warning: Your device may be slow for transcription. Consider using a
-            device with more cores for better performance.
+            Warning: Your device may be slow for transcription.
           </div>
         )}
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-800 dark:text-red-200">
             {error}
+          </div>
+        )}
+
+        {transcriptionStatus === "processing" && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-blue-800 dark:text-blue-200 text-sm">
+            Generating subtitles... Please wait.
           </div>
         )}
 
@@ -124,7 +153,7 @@ export default function Home() {
             </section>
 
             <section className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                   3. Generate Subtitles
                 </h2>
@@ -133,7 +162,7 @@ export default function Home() {
                   disabled={isTranscribing}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isTranscribing ? "Generating..." : "Generate Subtitles"}
+                  {getButtonText()}
                 </button>
               </div>
             </section>
