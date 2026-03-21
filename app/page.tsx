@@ -19,7 +19,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [showSlowDeviceWarning, setShowSlowDeviceWarning] = useState(false);
-  const [useMockMode, setUseMockMode] = useState(true); // Default to mock mode
+  const [useMockMode, setUseMockMode] = useState(false);
 
   useEffect(() => {
     if (checkDevicePerformance() === false) {
@@ -59,21 +59,39 @@ export default function Home() {
     setTranscriptionStatus("loading_model");
 
     try {
-      // Always use mock for now - see lib/whisperTranscriber.ts for Whisper integration
-      setTranscriptionStatus("processing");
-      const mock = new MockTranscriber();
-      const result = await mock.transcribe(videoFile.url, videoFile.duration);
-      
+      let result;
+
+      if (useMockMode) {
+        setTranscriptionStatus("processing");
+        const mock = new MockTranscriber();
+        result = await mock.transcribe(videoFile.url, videoFile.duration);
+      } else {
+        // Dynamic import - only loads on client side, never during SSR
+        const { WhisperTranscriber } = await import("../lib/whisperClient");
+        
+        const whisper = new WhisperTranscriber();
+        
+        whisper.setProgressCallback((status) => {
+          if (status.includes("Loading")) {
+            setTranscriptionStatus("loading_model");
+          } else {
+            setTranscriptionStatus("processing");
+          }
+        });
+
+        result = await whisper.transcribe(videoFile.url, videoFile.duration);
+      }
+
       setSubtitles(result.subtitles);
       setTranscriptionStatus("done");
     } catch (err) {
       console.error("Transcription error:", err);
-      setError("Failed to generate subtitles. Please try again.");
+      setError("Failed to generate subtitles. Try using mock mode or a shorter video.");
       setTranscriptionStatus("error");
     } finally {
       setIsTranscribing(false);
     }
-  }, [videoFile]);
+  }, [videoFile, useMockMode]);
 
   const handleExportSRT = useCallback(() => {
     if (subtitles.length === 0) return;
@@ -110,13 +128,13 @@ export default function Home() {
             Video Subtitle MVP
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Upload a video, generate subtitles, edit, and export as SRT
+            Upload a video, generate subtitles with AI, edit, and export as SRT
           </p>
         </div>
 
         {showSlowDeviceWarning && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-yellow-800 dark:text-yellow-200 text-sm">
-            Warning: Your device may be slow for transcription.
+            Warning: Your device may be slow for transcription. Consider using mock mode for testing.
           </div>
         )}
 
@@ -126,9 +144,15 @@ export default function Home() {
           </div>
         )}
 
+        {transcriptionStatus === "loading_model" && !useMockMode && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-blue-800 dark:text-blue-200 text-sm">
+            Loading AI model... This may take 30-60 seconds on first run depending on your device.
+          </div>
+        )}
+
         {transcriptionStatus === "processing" && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-blue-800 dark:text-blue-200 text-sm">
-            Generating subtitles... Please wait.
+            Processing audio... Please wait.
           </div>
         )}
 
@@ -157,13 +181,24 @@ export default function Home() {
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                   3. Generate Subtitles
                 </h2>
-                <button
-                  onClick={handleGenerateSubtitles}
-                  disabled={isTranscribing}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {getButtonText()}
-                </button>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <input
+                      type="checkbox"
+                      checked={useMockMode}
+                      onChange={(e) => setUseMockMode(e.target.checked)}
+                      className="rounded"
+                    />
+                    Use mock mode
+                  </label>
+                  <button
+                    onClick={handleGenerateSubtitles}
+                    disabled={isTranscribing}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {getButtonText()}
+                  </button>
+                </div>
               </div>
             </section>
 

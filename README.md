@@ -1,11 +1,11 @@
 # Video Subtitle MVP
 
-A minimal web app for automatic video subtitling.
+A minimal web app for automatic video subtitling with client-side Whisper integration.
 
 ## Features
 
 - Upload video files (MP4, WebM, MOV)
-- Generate subtitles using mock transcription
+- Generate subtitles using real Whisper AI (tiny model)
 - Edit subtitle text
 - Export subtitles as SRT file
 - Client-side only (no backend required)
@@ -15,6 +15,7 @@ A minimal web app for automatic video subtitling.
 
 - Node.js 18+ 
 - Modern browser (Chrome, Firefox, Safari, Edge)
+- 4GB+ RAM recommended for Whisper transcription
 
 ## Setup
 
@@ -32,9 +33,13 @@ npm run dev
 
 1. **Upload**: Drop a video file or click to browse
 2. **Validate**: Files are checked for format, size (max 50MB), and duration (max 5 minutes)
-3. **Generate**: Click "Generate Subtitles" to create subtitles
+3. **Generate**: Click "Generate Subtitles" to create subtitles with Whisper AI
 4. **Edit**: Modify subtitle text directly in the editor
 5. **Export**: Click "Download SRT" to save the subtitle file
+
+### Mock Mode
+
+Enable "Use mock mode" checkbox to use fake subtitles for testing without AI.
 
 ## Project Structure
 
@@ -52,6 +57,7 @@ npm run dev
 │   ├── utils.ts          # Time formatting
 │   ├── validators.ts     # File validation
 │   ├── mockTranscriber.ts # Mock transcription
+│   ├── whisperClient.ts  # Real Whisper transcription (client-only)
 │   └── srtExporter.ts    # SRT generation
 ├── public/
 │   └── favicon.svg       # App favicon
@@ -59,34 +65,21 @@ npm run dev
 └── README.md
 ```
 
-## Whisper Integration
+## Technical Details
 
-The app currently uses mock transcription. To integrate real Whisper:
+### Whisper Integration
 
-### Option 1: Vite SPA (Recommended)
+- Uses `@huggingface/transformers` for client-side inference
+- Model: `Xenova/whisper-tiny` (smallest, fastest)
+- Runs entirely in the browser using WebAssembly
+- Audio extracted from video and resampled to 16kHz mono
 
-Create a separate Vite-based React app for the transcription:
+### SSR Compatibility
 
-```bash
-npm create vite@latest whisper-app -- --template react-ts
-cd whisper-app
-npm install @huggingface/transformers
-# Implement using lib/whisperTranscriber.full.ts as reference
-```
-
-### Option 2: Static Export + CDN
-
-1. Build as static export:
-   ```bash
-   npm run build
-   # Serve the out/ directory
-   ```
-
-2. Load transformers.js from CDN in your HTML
-
-### Option 3: Standalone Node.js Script
-
-Use the transcription logic in a Node.js script with proper WASM support.
+The Whisper code uses dynamic imports to avoid Next.js SSR bundling issues:
+- Whisper code is in `lib/whisperClient.ts`
+- Imported dynamically only when user clicks "Generate Subtitles"
+- `webpack.IgnorePlugin` excludes problematic WASM modules from SSR
 
 ## Build for Production
 
@@ -101,6 +94,7 @@ npm start
 - React 18
 - TypeScript
 - TailwindCSS
+- @huggingface/transformers
 
 ## License
 
