@@ -20,6 +20,7 @@ export default function Home() {
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
   const [highlightedSubId, setHighlightedSubId] = useState<number | null>(null);
   const [showSlowDeviceWarning, setShowSlowDeviceWarning] = useState(false);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<"landscape" | "portrait" | "square">("landscape");
 
   useEffect(() => {
     if (checkDevicePerformance() === false) {
@@ -61,6 +62,10 @@ export default function Home() {
 
   const handleDurationChange = useCallback((d: number) => {
     setDuration(d);
+  }, []);
+
+  const handleAspectRatioChange = useCallback((ratio: "landscape" | "portrait" | "square") => {
+    setVideoAspectRatio(ratio);
   }, []);
 
   const handleSeek = useCallback((time: number) => {
@@ -121,6 +126,7 @@ export default function Home() {
                   seekTo={seekTo}
                   onTimeUpdate={handleTimeUpdate}
                   onDurationChange={handleDurationChange}
+                  onAspectRatioChange={handleAspectRatioChange}
                 />
               </section>
 
@@ -131,6 +137,7 @@ export default function Home() {
                 <StyleEditor
                   style={subtitleStyle}
                   onChange={setSubtitleStyle}
+                  videoAspectRatio={videoAspectRatio}
                 />
               </section>
             </div>

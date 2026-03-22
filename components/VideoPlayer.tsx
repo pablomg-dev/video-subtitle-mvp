@@ -10,6 +10,7 @@ interface VideoPlayerProps {
   seekTo?: number;
   onTimeUpdate?: (time: number) => void;
   onDurationChange?: (duration: number) => void;
+  onAspectRatioChange?: (ratio: "landscape" | "portrait" | "square") => void;
 }
 
 function hexToRgba(hex: string, opacity: number): string {
@@ -26,10 +27,12 @@ export default function VideoPlayer({
   seekTo,
   onTimeUpdate,
   onDurationChange,
+  onAspectRatioChange,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [activeSub, setActiveSub] = useState<Subtitle | null>(null);
   const [isVertical, setIsVertical] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState("16/9");
 
   useEffect(() => {
     setActiveSub(null);
@@ -63,7 +66,7 @@ export default function VideoPlayer({
         bottom: "auto",
       };
     } else {
-      return { ...baseStyle, bottom: "52px" };
+      return { ...baseStyle, bottom: isVertical ? "8%" : "52px" };
     }
   };
 
@@ -75,19 +78,37 @@ export default function VideoPlayer({
   };
 
   return (
-    <div className="w-full bg-black rounded-lg overflow-hidden relative inline-block">
+    <div
+      className="bg-black rounded-lg"
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        aspectRatio,
+        maxHeight: "60vh",
+        maxWidth: isVertical ? "60%" : "100%",
+        margin: "0 auto",
+        width: "100%",
+      }}
+    >
       <video
         ref={videoRef}
         src={videoUrl}
         controls
-        className="w-full aspect-video block"
+        style={{ width: "100%", height: "100%", objectFit: "contain" }}
         onLoadedMetadata={() => {
           if (videoRef.current) {
-            setIsVertical(
-              (videoRef.current.videoHeight ?? 0) >
-                (videoRef.current.videoWidth ?? 1)
-            );
-            onDurationChange?.(videoRef.current.duration);
+            const v = videoRef.current;
+            const ratio = v.videoWidth / v.videoHeight;
+            setIsVertical(v.videoHeight > v.videoWidth);
+            setAspectRatio(`${v.videoWidth}/${v.videoHeight}`);
+            onDurationChange?.(v.duration);
+            if (ratio > 1.2) {
+              onAspectRatioChange?.("landscape");
+            } else if (ratio < 0.85) {
+              onAspectRatioChange?.("portrait");
+            } else {
+              onAspectRatioChange?.("square");
+            }
           }
         }}
         onTimeUpdate={(e) => {
@@ -100,7 +121,7 @@ export default function VideoPlayer({
           setActiveSub((prev) => (prev?.id === found?.id ? prev : found));
         }}
       />
-      <div style={getOverlayStyle()}>
+      <div style={{ ...getOverlayStyle(), width: "100%" }}>
         <div
           style={{
             fontFamily: style.fontFamily,

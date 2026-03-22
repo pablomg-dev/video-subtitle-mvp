@@ -5,6 +5,7 @@ import { SubtitleStyle } from "../lib/types";
 interface StyleEditorProps {
   style: SubtitleStyle;
   onChange: (s: SubtitleStyle) => void;
+  videoAspectRatio?: "landscape" | "portrait" | "square";
 }
 
 const FONTS = [
@@ -23,7 +24,16 @@ function hexToRgba(hex: string, opacity: number): string {
   return `rgba(${r},${g},${b},${opacity})`;
 }
 
-export default function StyleEditor({ style, onChange }: StyleEditorProps) {
+function getPreviewContainerStyle(aspectRatio: "landscape" | "portrait" | "square"): React.CSSProperties {
+  if (aspectRatio === "portrait") {
+    return { width: "120px", height: "213px", margin: "0 auto", position: "relative" as const };
+  } else if (aspectRatio === "square") {
+    return { width: "120px", height: "120px", margin: "0 auto", position: "relative" as const };
+  }
+  return { width: "100%", height: "80px", position: "relative" as const };
+}
+
+export default function StyleEditor({ style, onChange, videoAspectRatio = "landscape" }: StyleEditorProps) {
   const update = (partial: Partial<SubtitleStyle>) => {
     onChange({ ...style, ...partial });
   };
@@ -171,13 +181,23 @@ export default function StyleEditor({ style, onChange }: StyleEditorProps) {
           Vista previa
         </label>
         <div
-          className="h-20 rounded-lg flex items-center justify-center overflow-hidden"
-          style={{ backgroundColor: "#1a1a1a" }}
+          className="rounded-lg overflow-hidden"
+          style={{
+            ...getPreviewContainerStyle(videoAspectRatio),
+            backgroundColor: "#1a1a1a",
+            display: "flex",
+            alignItems: style.position === "top"
+              ? "flex-start"
+              : style.position === "middle"
+              ? "center"
+              : "flex-end",
+            padding: "8px",
+          }}
         >
           <span
             style={{
               fontFamily: style.fontFamily,
-              fontSize: `${Math.max(12, style.fontSize * 0.6)}px`,
+              fontSize: "14px",
               fontWeight: style.bold ? "bold" : "normal",
               color: style.color,
               backgroundColor: hexToRgba(style.bgColor, style.bgOpacity),

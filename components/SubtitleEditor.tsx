@@ -184,11 +184,20 @@ export default function SubtitleEditor({
             </button>
           )}
 
-          <input
-            type="text"
+          <textarea
             value={subtitle.text}
-            onChange={(e) => updateSubtitle(subtitle.id, e.target.value)}
-            className="flex-1 bg-transparent border-none outline-none text-gray-800 dark:text-gray-200"
+            rows={1}
+            onChange={(e) => {
+              updateSubtitle(subtitle.id, e.target.value);
+              e.currentTarget.style.height = "auto";
+              e.currentTarget.style.height = e.currentTarget.scrollHeight + "px";
+            }}
+            onInput={(e) => {
+              e.currentTarget.style.height = "auto";
+              e.currentTarget.style.height = e.currentTarget.scrollHeight + "px";
+            }}
+            className="flex-1 bg-transparent border-none outline-none text-gray-800 dark:text-gray-200 resize-none overflow-hidden"
+            style={{ resize: "none", overflow: "hidden" }}
           />
           <button
             onClick={() => deleteSubtitle(subtitle.id)}
