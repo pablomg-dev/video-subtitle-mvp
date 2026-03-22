@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useEffect, useState } from "react";
 import { Subtitle } from "../lib/types";
 
 interface TimelineProps {
@@ -17,6 +18,20 @@ export default function Timeline({
   onSeek,
   onSubtitleClick,
 }: TimelineProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, []);
+
   if (duration <= 0) {
     return (
       <div
@@ -40,6 +55,7 @@ export default function Timeline({
   return (
     <div className="w-full">
       <div
+        ref={containerRef}
         onClick={handleTimelineClick}
         className="relative w-full h-16 rounded-lg overflow-hidden cursor-pointer select-none"
         style={{ backgroundColor: "#1a1a2e" }}
@@ -47,6 +63,9 @@ export default function Timeline({
         {subtitles.map((sub) => {
           const left = (sub.start / duration) * 100;
           const width = ((sub.end - sub.start) / duration) * 100;
+          const blockWidthPx = (sub.end - sub.start) / duration * containerWidth;
+          const showText = blockWidthPx >= 60;
+
           return (
             <div
               key={sub.id}
@@ -63,7 +82,7 @@ export default function Timeline({
               }}
               title={sub.text}
             >
-              {width > 8 && (
+              {showText && (
                 <span
                   className="text-white text-xs truncate"
                   style={{ textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}

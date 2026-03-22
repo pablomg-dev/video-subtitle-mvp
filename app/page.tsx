@@ -6,21 +6,29 @@ import VideoPlayer from "../components/VideoPlayer";
 import SubtitleEditor from "../components/SubtitleEditor";
 import TranscribeButton from "../components/TranscribeButton";
 import Timeline from "../components/Timeline";
-import StyleEditor from "../components/StyleEditor";
-import { Subtitle, VideoFile, defaultSubtitleStyle } from "../lib/types";
+import { Subtitle, VideoFile } from "../lib/types";
 import { checkDevicePerformance } from "../lib/validators";
+import { downloadSRT } from "../lib/srtExporter";
+
+const SUBTITLE_STYLE = {
+  fontFamily: "Arial",
+  fontSize: 22,
+  color: "#ffffff",
+  bgColor: "#000000",
+  bgOpacity: 0.65,
+  bold: false,
+  position: "bottom" as const,
+};
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<VideoFile | null>(null);
   const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
-  const [subtitleStyle, setSubtitleStyle] = useState(defaultSubtitleStyle);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
   const [highlightedSubId, setHighlightedSubId] = useState<number | null>(null);
   const [showSlowDeviceWarning, setShowSlowDeviceWarning] = useState(false);
-  const [videoAspectRatio, setVideoAspectRatio] = useState<"landscape" | "portrait" | "square">("landscape");
 
   useEffect(() => {
     if (checkDevicePerformance() === false) {
@@ -64,10 +72,6 @@ export default function Home() {
     setDuration(d);
   }, []);
 
-  const handleAspectRatioChange = useCallback((ratio: "landscape" | "portrait" | "square") => {
-    setVideoAspectRatio(ratio);
-  }, []);
-
   const handleSeek = useCallback((time: number) => {
     setSeekTo(time);
     setTimeout(() => setSeekTo(undefined), 100);
@@ -80,6 +84,10 @@ export default function Home() {
       handleSeek(sub.start);
     }
   }, [subtitles, handleSeek]);
+
+  const handleDownloadSRT = useCallback(() => {
+    downloadSRT(subtitles);
+  }, [subtitles]);
 
   return (
     <main className="min-h-screen py-8 px-4">
@@ -122,22 +130,10 @@ export default function Home() {
                 <VideoPlayer
                   videoUrl={videoFile.url}
                   subtitles={subtitles}
-                  style={subtitleStyle}
+                  style={SUBTITLE_STYLE}
                   seekTo={seekTo}
                   onTimeUpdate={handleTimeUpdate}
                   onDurationChange={handleDurationChange}
-                  onAspectRatioChange={handleAspectRatioChange}
-                />
-              </section>
-
-              <section className="space-y-4 mt-6">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                  Estilos
-                </h2>
-                <StyleEditor
-                  style={subtitleStyle}
-                  onChange={setSubtitleStyle}
-                  videoAspectRatio={videoAspectRatio}
                 />
               </section>
             </div>
@@ -179,6 +175,13 @@ export default function Home() {
                       currentTime={currentTime}
                       highlightedId={highlightedSubId}
                     />
+
+                    <button
+                      onClick={handleDownloadSRT}
+                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+                    >
+                      Descargar SRT
+                    </button>
                   </section>
                 </>
               )}

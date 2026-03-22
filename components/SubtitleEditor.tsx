@@ -150,6 +150,8 @@ export default function SubtitleEditor({
               onBlur={saveEditingTime}
               onKeyDown={handleTimeKeyDown}
               autoFocus
+              id={`subtitle-start-${subtitle.id}`}
+              name={`subtitle-start-${subtitle.id}`}
               className="w-16 px-1 py-0.5 bg-white dark:bg-gray-700 border border-blue-500 rounded text-sm font-mono text-gray-800 dark:text-gray-200"
             />
           ) : (
@@ -173,6 +175,8 @@ export default function SubtitleEditor({
               onBlur={saveEditingTime}
               onKeyDown={handleTimeKeyDown}
               autoFocus
+              id={`subtitle-end-${subtitle.id}`}
+              name={`subtitle-end-${subtitle.id}`}
               className="w-16 px-1 py-0.5 bg-white dark:bg-gray-700 border border-blue-500 rounded text-sm font-mono text-gray-800 dark:text-gray-200"
             />
           ) : (
@@ -185,6 +189,8 @@ export default function SubtitleEditor({
           )}
 
           <textarea
+            id={`subtitle-text-${subtitle.id}`}
+            name={`subtitle-text-${subtitle.id}`}
             value={subtitle.text}
             rows={1}
             onChange={(e) => {
@@ -196,8 +202,7 @@ export default function SubtitleEditor({
               e.currentTarget.style.height = "auto";
               e.currentTarget.style.height = e.currentTarget.scrollHeight + "px";
             }}
-            className="flex-1 bg-transparent border-none outline-none text-gray-800 dark:text-gray-200 resize-none overflow-hidden"
-            style={{ resize: "none", overflow: "hidden" }}
+            className="flex-1 min-w-0 w-full bg-transparent border-none outline-none text-gray-800 dark:text-gray-200 resize-none"
           />
           <button
             onClick={() => deleteSubtitle(subtitle.id)}
