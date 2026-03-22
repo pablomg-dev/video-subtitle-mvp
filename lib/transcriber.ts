@@ -114,12 +114,3 @@ async function sendToApi(
   const result = await response.json();
   return result.subtitles;
 }
-
-export function getMockSubtitles(): Subtitle[] {
-  return [
-    { id: 1, start: 0.0, end: 2.5, text: "Sample subtitle one." },
-    { id: 2, start: 2.5, end: 5.0, text: "This is mock transcription." },
-    { id: 3, start: 5.0, end: 8.0, text: "Add your Groq API key to use real transcription." },
-    { id: 4, start: 8.0, end: 11.0, text: "Get a free key at groq.com" },
-  ];
-}

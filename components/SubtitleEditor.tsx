@@ -1,7 +1,7 @@
 "use client";
 
 import { Subtitle } from "../lib/types";
-import { formatTime } from "../lib/utils";
+import { formatTimeShort } from "../lib/utils";
 
 interface SubtitleEditorProps {
   subtitles: Subtitle[];
@@ -63,8 +63,8 @@ export default function SubtitleEditor({
           <span className="text-gray-400 dark:text-gray-500 font-mono text-sm min-w-[2rem]">
             {subtitle.id}
           </span>
-          <span className="text-gray-500 dark:text-gray-400 font-mono text-xs min-w-[7rem]">
-            {formatTime(subtitle.start)} - {formatTime(subtitle.end)}
+          <span className="text-gray-500 dark:text-gray-400 font-mono text-xs min-w-[4rem]">
+            {formatTimeShort(subtitle.start)} - {formatTimeShort(subtitle.end)}
           </span>
           <input
             type="text"

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Subtitle } from "@/lib/types";
-import { transcribeVideo, getMockSubtitles } from "@/lib/transcriber";
+import { transcribeVideo } from "@/lib/transcriber";
 
 interface TranscribeButtonProps {
   videoFile: File | null;
@@ -64,29 +64,15 @@ export default function TranscribeButton({
     }
   };
 
-  const handleMockSubtitles = () => {
-    const mock = getMockSubtitles();
-    onSubtitlesReady(mock);
-  };
-
   return (
     <div className="space-y-3">
-      <div className="flex gap-3">
-        <button
-          onClick={handleTranscribe}
-          disabled={!videoFile || isProcessing}
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {getButtonText()}
-        </button>
-        <button
-          onClick={handleMockSubtitles}
-          disabled={isProcessing}
-          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          Use mock subtitles
-        </button>
-      </div>
+      <button
+        onClick={handleTranscribe}
+        disabled={!videoFile || isProcessing}
+        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        {getButtonText()}
+      </button>
 
       {isProcessing && stage !== "transcribing" && (
         <div className="space-y-1">

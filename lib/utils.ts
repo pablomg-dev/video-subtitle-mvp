@@ -7,6 +7,12 @@ export function formatTime(seconds: number): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(secs)},${pad(ms, 3)}`;
 }
 
+export function formatTimeShort(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${pad(minutes)}:${pad(secs)}`;
+}
+
 export function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
