@@ -7,7 +7,6 @@ import { formatTimeShort } from "../lib/utils";
 interface SubtitleEditorProps {
   subtitles: Subtitle[];
   onChange: (subtitles: Subtitle[]) => void;
-  onOffsetChange?: (offset: number) => void;
   currentTime?: number;
 }
 
@@ -20,10 +19,8 @@ interface EditingTime {
 export default function SubtitleEditor({
   subtitles,
   onChange,
-  onOffsetChange,
   currentTime = 0,
 }: SubtitleEditorProps) {
-  const [offset, setOffset] = useState(0);
   const [editingTime, setEditingTime] = useState<EditingTime | null>(null);
 
   const updateSubtitle = (id: number, text: string) => {
@@ -50,25 +47,9 @@ export default function SubtitleEditor({
     );
   };
 
-  const adjustOffset = (delta: number) => {
-    const newOffset = Math.max(-10, Math.min(10, offset + delta));
-    setOffset(newOffset);
-    onOffsetChange?.(newOffset);
-  };
-
-  const handleOffsetInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newOffset = parseFloat(e.target.value);
-    setOffset(newOffset);
-    onOffsetChange?.(newOffset);
-  };
-
-  const getAdjustedTime = (time: number): number => {
-    return Math.max(0, time + offset);
-  };
-
   const getCurrentSubtitleId = (): number | null => {
     for (const sub of subtitles) {
-      if (currentTime >= getAdjustedTime(sub.start) && currentTime <= getAdjustedTime(sub.end)) {
+      if (currentTime >= sub.start && currentTime <= sub.end) {
         return sub.id;
       }
     }
@@ -76,11 +57,6 @@ export default function SubtitleEditor({
   };
 
   const currentSubtitleId = getCurrentSubtitleId();
-
-  const formatOffset = (val: number): string => {
-    if (val === 0) return "0s";
-    return val > 0 ? `+${val.toFixed(1)}s` : `${val.toFixed(1)}s`;
-  };
 
   const startEditingTime = (id: number, field: "start" | "end", currentValue: number) => {
     setEditingTime({ id, field, value: Math.round(currentValue).toString() });
@@ -146,123 +122,91 @@ export default function SubtitleEditor({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Ajuste de sincronización
-        </span>
-        <button
-          onClick={() => adjustOffset(-0.5)}
-          className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600"
+    <div className="space-y-2 max-h-96 overflow-y-auto">
+      {subtitles.map((subtitle) => (
+        <div
+          key={subtitle.id}
+          className={`flex gap-2 p-3 rounded-lg border transition-colors items-center ${
+            currentSubtitleId === subtitle.id
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+              : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+          }`}
         >
-          -0.5s
-        </button>
-        <input
-          type="range"
-          min="-10"
-          max="10"
-          step="0.5"
-          value={offset}
-          onChange={handleOffsetInput}
-          className="flex-1"
-        />
-        <button
-          onClick={() => adjustOffset(0.5)}
-          className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600"
-        >
-          +0.5s
-        </button>
-        <span className="text-sm font-mono text-gray-600 dark:text-gray-400 min-w-[3rem]">
-          {formatOffset(offset)}
-        </span>
-      </div>
+          <span className="text-gray-400 dark:text-gray-500 font-mono text-sm min-w-[2rem]">
+            {subtitle.id}
+          </span>
 
-      <div className="space-y-2 max-h-96 overflow-y-auto">
-        {subtitles.map((subtitle) => (
-          <div
-            key={subtitle.id}
-            className={`flex gap-2 p-3 rounded-lg border transition-colors items-center ${
-              currentSubtitleId === subtitle.id
-                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-            }`}
-          >
-            <span className="text-gray-400 dark:text-gray-500 font-mono text-sm min-w-[2rem]">
-              {subtitle.id}
-            </span>
-
-            {editingTime?.id === subtitle.id && editingTime?.field === "start" ? (
-              <input
-                type="number"
-                step="1"
-                min="0"
-                value={editingTime.value}
-                onChange={(e) => handleTimeChange(e.target.value)}
-                onBlur={saveEditingTime}
-                onKeyDown={handleTimeKeyDown}
-                autoFocus
-                className="w-16 px-1 py-0.5 bg-white dark:bg-gray-700 border border-blue-500 rounded text-sm font-mono text-gray-800 dark:text-gray-200"
-              />
-            ) : (
-              <button
-                onClick={() => startEditingTime(subtitle.id, "start", subtitle.start)}
-                className="text-gray-500 dark:text-gray-400 font-mono text-xs min-w-[3rem] hover:text-blue-500 cursor-pointer"
-              >
-                {formatTimeShort(getAdjustedTime(subtitle.start))}
-              </button>
-            )}
-
-            <span className="text-gray-400">-</span>
-
-            {editingTime?.id === subtitle.id && editingTime?.field === "end" ? (
-              <input
-                type="number"
-                step="1"
-                min="0"
-                value={editingTime.value}
-                onChange={(e) => handleTimeChange(e.target.value)}
-                onBlur={saveEditingTime}
-                onKeyDown={handleTimeKeyDown}
-                autoFocus
-                className="w-16 px-1 py-0.5 bg-white dark:bg-gray-700 border border-blue-500 rounded text-sm font-mono text-gray-800 dark:text-gray-200"
-              />
-            ) : (
-              <button
-                onClick={() => startEditingTime(subtitle.id, "end", subtitle.end)}
-                className="text-gray-500 dark:text-gray-400 font-mono text-xs min-w-[3rem] hover:text-blue-500 cursor-pointer"
-              >
-                {formatTimeShort(getAdjustedTime(subtitle.end))}
-              </button>
-            )}
-
+          {editingTime?.id === subtitle.id && editingTime?.field === "start" ? (
             <input
-              type="text"
-              value={subtitle.text}
-              onChange={(e) => updateSubtitle(subtitle.id, e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none text-gray-800 dark:text-gray-200"
+              type="number"
+              step="1"
+              min="0"
+              value={editingTime.value}
+              onChange={(e) => handleTimeChange(e.target.value)}
+              onBlur={saveEditingTime}
+              onKeyDown={handleTimeKeyDown}
+              autoFocus
+              className="w-16 px-1 py-0.5 bg-white dark:bg-gray-700 border border-blue-500 rounded text-sm font-mono text-gray-800 dark:text-gray-200"
             />
+          ) : (
             <button
-              onClick={() => deleteSubtitle(subtitle.id)}
-              className="text-gray-400 hover:text-red-500 transition-colors"
-              title="Delete subtitle"
+              onClick={() => startEditingTime(subtitle.id, "start", subtitle.start)}
+              className="text-gray-500 dark:text-gray-400 font-mono text-xs min-w-[3rem] hover:text-blue-500 cursor-pointer"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
+              {formatTimeShort(subtitle.start)}
             </button>
-          </div>
-        ))}
-      </div>
+          )}
+
+          <span className="text-gray-400">-</span>
+
+          {editingTime?.id === subtitle.id && editingTime?.field === "end" ? (
+            <input
+              type="number"
+              step="1"
+              min="0"
+              value={editingTime.value}
+              onChange={(e) => handleTimeChange(e.target.value)}
+              onBlur={saveEditingTime}
+              onKeyDown={handleTimeKeyDown}
+              autoFocus
+              className="w-16 px-1 py-0.5 bg-white dark:bg-gray-700 border border-blue-500 rounded text-sm font-mono text-gray-800 dark:text-gray-200"
+            />
+          ) : (
+            <button
+              onClick={() => startEditingTime(subtitle.id, "end", subtitle.end)}
+              className="text-gray-500 dark:text-gray-400 font-mono text-xs min-w-[3rem] hover:text-blue-500 cursor-pointer"
+            >
+              {formatTimeShort(subtitle.end)}
+            </button>
+          )}
+
+          <input
+            type="text"
+            value={subtitle.text}
+            onChange={(e) => updateSubtitle(subtitle.id, e.target.value)}
+            className="flex-1 bg-transparent border-none outline-none text-gray-800 dark:text-gray-200"
+          />
+          <button
+            onClick={() => deleteSubtitle(subtitle.id)}
+            className="text-gray-400 hover:text-red-500 transition-colors"
+            title="Delete subtitle"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+          </button>
+        </div>
+      ))}
     </div>
   );
 }

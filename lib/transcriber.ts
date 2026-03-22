@@ -15,6 +15,48 @@ export interface TranscribeOptions {
 const API_URL = "/api/transcribe";
 const MAX_DURATION = 300; // 5 minutes
 
+function splitLongSubtitles(subtitles: Subtitle[]): Subtitle[] {
+  const MAX_CHARS = 80;
+  const result: Subtitle[] = [];
+  let newId = 1;
+
+  for (const sub of subtitles) {
+    if (sub.text.length <= MAX_CHARS) {
+      result.push({ ...sub, id: newId++ });
+      continue;
+    }
+
+    const mid = Math.floor(sub.text.length / 2);
+    let splitAt = -1;
+
+    for (let i = 0; i <= 20; i++) {
+      if (sub.text[mid + i] === " ") { splitAt = mid + i; break; }
+      if (sub.text[mid - i] === " ") { splitAt = mid - i; break; }
+    }
+
+    if (splitAt === -1) splitAt = mid;
+
+    const firstText = sub.text.slice(0, splitAt).trim();
+    const secondText = sub.text.slice(splitAt).trim();
+    const midTime = sub.start + (sub.end - sub.start) / 2;
+
+    result.push({
+      id: newId++,
+      start: sub.start,
+      end: midTime,
+      text: firstText,
+    });
+    result.push({
+      id: newId++,
+      start: midTime,
+      end: sub.end,
+      text: secondText,
+    });
+  }
+
+  return result;
+}
+
 export async function transcribeVideo(
   videoFile: File,
   options: TranscribeOptions = {}
@@ -42,7 +84,7 @@ export async function transcribeVideo(
     onProgress?.("transcribing", pct);
   });
 
-  return subtitles;
+  return splitLongSubtitles(subtitles);
 }
 
 async function extractAudio(

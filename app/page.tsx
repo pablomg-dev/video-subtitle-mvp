@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Upload from "../components/Upload";
 import VideoPlayer from "../components/VideoPlayer";
 import SubtitleEditor from "../components/SubtitleEditor";
@@ -12,16 +12,9 @@ export default function Home() {
   const [videoFile, setVideoFile] = useState<VideoFile | null>(null);
   const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
   const [subtitleStyle, setSubtitleStyle] = useState(defaultSubtitleStyle);
-  const [subtitleOffset, setSubtitleOffset] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [showSlowDeviceWarning, setShowSlowDeviceWarning] = useState(false);
-
-  const subtitleOffsetRef = useRef(0);
-
-  useEffect(() => {
-    subtitleOffsetRef.current = subtitleOffset;
-  }, [subtitleOffset]);
 
   useEffect(() => {
     if (checkDevicePerformance() === false) {
@@ -55,8 +48,6 @@ export default function Home() {
   const handleSubtitlesReady = useCallback((newSubtitles: Subtitle[]) => {
     setSubtitles(newSubtitles);
   }, []);
-
-
 
   const handleTimeUpdate = useCallback((time: number) => {
     setCurrentTime(time);
@@ -103,7 +94,6 @@ export default function Home() {
                 videoUrl={videoFile.url}
                 subtitles={subtitles}
                 style={subtitleStyle}
-                offsetSeconds={subtitleOffset}
                 onTimeUpdate={handleTimeUpdate}
               />
             </section>
@@ -127,7 +117,6 @@ export default function Home() {
                 <SubtitleEditor
                   subtitles={subtitles}
                   onChange={setSubtitles}
-                  onOffsetChange={setSubtitleOffset}
                   currentTime={currentTime}
                 />
               </section>
