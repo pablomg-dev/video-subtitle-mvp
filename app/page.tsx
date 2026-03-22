@@ -5,6 +5,8 @@ import Upload from "../components/Upload";
 import VideoPlayer from "../components/VideoPlayer";
 import SubtitleEditor from "../components/SubtitleEditor";
 import TranscribeButton from "../components/TranscribeButton";
+import Timeline from "../components/Timeline";
+import StyleEditor from "../components/StyleEditor";
 import { Subtitle, VideoFile, defaultSubtitleStyle } from "../lib/types";
 import { checkDevicePerformance } from "../lib/validators";
 
@@ -14,6 +16,9 @@ export default function Home() {
   const [subtitleStyle, setSubtitleStyle] = useState(defaultSubtitleStyle);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
+  const [highlightedSubId, setHighlightedSubId] = useState<number | null>(null);
   const [showSlowDeviceWarning, setShowSlowDeviceWarning] = useState(false);
 
   useEffect(() => {
@@ -30,15 +35,16 @@ export default function Home() {
     };
   }, [videoFile]);
 
-  const handleFileSelect = useCallback((file: File, duration: number) => {
+  const handleFileSelect = useCallback((file: File, d: number) => {
     if (videoFile?.url) {
       URL.revokeObjectURL(videoFile.url);
     }
 
     const url = URL.createObjectURL(file);
-    setVideoFile({ file, url, duration });
+    setVideoFile({ file, url, duration: d });
     setSubtitles([]);
     setError(null);
+    setDuration(0);
   }, [videoFile]);
 
   const handleError = useCallback((message: string) => {
@@ -53,9 +59,26 @@ export default function Home() {
     setCurrentTime(time);
   }, []);
 
+  const handleDurationChange = useCallback((d: number) => {
+    setDuration(d);
+  }, []);
+
+  const handleSeek = useCallback((time: number) => {
+    setSeekTo(time);
+    setTimeout(() => setSeekTo(undefined), 100);
+  }, []);
+
+  const handleSubtitleClick = useCallback((id: number) => {
+    setHighlightedSubId(id);
+    const sub = subtitles.find((s) => s.id === id);
+    if (sub) {
+      handleSeek(sub.start);
+    }
+  }, [subtitles, handleSeek]);
+
   return (
     <main className="min-h-screen py-8 px-4">
-      <div className="max-w-3xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Video Subtitle MVP
@@ -85,43 +108,75 @@ export default function Home() {
         </section>
 
         {videoFile && (
-          <>
-            <section className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                2. Video Preview
-              </h2>
-              <VideoPlayer
-                videoUrl={videoFile.url}
-                subtitles={subtitles}
-                style={subtitleStyle}
-                onTimeUpdate={handleTimeUpdate}
-              />
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                3. Generate Subtitles
-              </h2>
-              <TranscribeButton
-                videoFile={videoFile.file}
-                onSubtitlesReady={handleSubtitlesReady}
-                onError={handleError}
-              />
-            </section>
-
-            {subtitles.length > 0 && (
+          <div className="flex gap-4" style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
+            <div style={{ flex: "0 0 62%" }}>
               <section className="space-y-4">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                  4. Edit Subtitles
+                  2. Video Preview
                 </h2>
-                <SubtitleEditor
+                <VideoPlayer
+                  videoUrl={videoFile.url}
                   subtitles={subtitles}
-                  onChange={setSubtitles}
-                  currentTime={currentTime}
+                  style={subtitleStyle}
+                  seekTo={seekTo}
+                  onTimeUpdate={handleTimeUpdate}
+                  onDurationChange={handleDurationChange}
                 />
               </section>
-            )}
-          </>
+
+              <section className="space-y-4 mt-6">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                  Estilos
+                </h2>
+                <StyleEditor
+                  style={subtitleStyle}
+                  onChange={setSubtitleStyle}
+                />
+              </section>
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <section className="space-y-4 mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                  3. Generar Subtítulos
+                </h2>
+                <TranscribeButton
+                  videoFile={videoFile.file}
+                  onSubtitlesReady={handleSubtitlesReady}
+                  onError={handleError}
+                />
+              </section>
+
+              {subtitles.length > 0 && (
+                <>
+                  <section className="space-y-2 mb-4">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                      Línea de tiempo
+                    </h2>
+                    <Timeline
+                      subtitles={subtitles}
+                      currentTime={currentTime}
+                      duration={duration}
+                      onSeek={handleSeek}
+                      onSubtitleClick={handleSubtitleClick}
+                    />
+                  </section>
+
+                  <section className="space-y-4">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                      4. Editar Subtítulos
+                    </h2>
+                    <SubtitleEditor
+                      subtitles={subtitles}
+                      onChange={setSubtitles}
+                      currentTime={currentTime}
+                      highlightedId={highlightedSubId}
+                    />
+                  </section>
+                </>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </main>

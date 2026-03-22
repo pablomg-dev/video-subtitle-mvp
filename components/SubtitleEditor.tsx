@@ -8,6 +8,7 @@ interface SubtitleEditorProps {
   subtitles: Subtitle[];
   onChange: (subtitles: Subtitle[]) => void;
   currentTime?: number;
+  highlightedId?: number | null;
 }
 
 interface EditingTime {
@@ -20,6 +21,7 @@ export default function SubtitleEditor({
   subtitles,
   onChange,
   currentTime = 0,
+  highlightedId,
 }: SubtitleEditorProps) {
   const [editingTime, setEditingTime] = useState<EditingTime | null>(null);
 
@@ -127,7 +129,9 @@ export default function SubtitleEditor({
         <div
           key={subtitle.id}
           className={`flex gap-2 p-3 rounded-lg border transition-colors items-center ${
-            currentSubtitleId === subtitle.id
+            highlightedId === subtitle.id
+              ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400"
+              : currentSubtitleId === subtitle.id
               ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
               : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
           }`}
