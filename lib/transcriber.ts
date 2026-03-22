@@ -9,6 +9,7 @@ import { Subtitle } from "./types";
 
 export interface TranscribeOptions {
   onProgress?: (stage: "extracting" | "uploading" | "transcribing", pct?: number) => void;
+  language?: string;
 }
 
 const API_URL = "/api/transcribe";
@@ -18,7 +19,7 @@ export async function transcribeVideo(
   videoFile: File,
   options: TranscribeOptions = {}
 ): Promise<Subtitle[]> {
-  const { onProgress } = options;
+  const { onProgress, language } = options;
 
   if (typeof window === "undefined") {
     throw new Error("Transcription must run in browser");
@@ -37,7 +38,7 @@ export async function transcribeVideo(
 
   onProgress?.("transcribing", 0);
 
-  const subtitles = await sendToApi(audioFile, (pct) => {
+  const subtitles = await sendToApi(audioFile, language, (pct) => {
     onProgress?.("transcribing", pct);
   });
 
@@ -67,16 +68,20 @@ async function extractAudio(
 
   onProgress(30);
 
-  await ffmpeg.writeFile("input", await fetchFile(videoFile));
+  await ffmpeg.writeFile("input.mp4", await fetchFile(videoFile));
 
   onProgress(40);
 
   await ffmpeg.exec([
-    "-i", "input",
+    "-i", "input.mp4",
+    "-vn",
+    "-acodec", "pcm_s16le",
     "-ar", "16000",
     "-ac", "1",
     "-t", MAX_DURATION.toString(),
-    "-f", "wav",
+    "-af", "aresample=async=1",
+    "-avoid_negative_ts", "make_zero",
+    "-fflags", "+genpts",
     "output.wav",
   ]);
 
@@ -86,7 +91,7 @@ async function extractAudio(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const blob = new Blob([data as any], { type: "audio/wav" });
 
-  await ffmpeg.deleteFile("input");
+  await ffmpeg.deleteFile("input.mp4");
   await ffmpeg.deleteFile("output.wav");
 
   return blob;
@@ -94,10 +99,14 @@ async function extractAudio(
 
 async function sendToApi(
   audioFile: File,
+  language: string | undefined,
   onProgress: (pct: number) => void
 ): Promise<Subtitle[]> {
   const formData = new FormData();
   formData.append("audio", audioFile);
+  if (language) {
+    formData.append("language", language);
+  }
 
   const response = await fetch(API_URL, {
     method: "POST",

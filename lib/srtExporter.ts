@@ -1,11 +1,11 @@
 import { Subtitle } from "./types";
 import { formatTime } from "./utils";
 
-export function generateSRT(subtitles: Subtitle[]): string {
+export function generateSRT(subtitles: Subtitle[], offsetSeconds: number = 0): string {
   return subtitles
     .map((subtitle, index) => {
-      const startTime = formatTime(subtitle.start);
-      const endTime = formatTime(subtitle.end);
+      const startTime = formatTime(Math.max(0, subtitle.start + offsetSeconds));
+      const endTime = formatTime(Math.max(0, subtitle.end + offsetSeconds));
       const text = subtitle.text.replace(/\n/g, " ");
 
       return `${index + 1}\n${startTime} --> ${endTime}\n${text}`;
@@ -13,8 +13,8 @@ export function generateSRT(subtitles: Subtitle[]): string {
     .join("\n\n");
 }
 
-export function downloadSRT(subtitles: Subtitle[], filename: string = "subtitles.srt"): void {
-  const srtContent = generateSRT(subtitles);
+export function downloadSRT(subtitles: Subtitle[], filename: string = "subtitles.srt", offsetSeconds: number = 0): void {
+  const srtContent = generateSRT(subtitles, offsetSeconds);
   const blob = new Blob([srtContent], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 

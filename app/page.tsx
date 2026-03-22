@@ -1,20 +1,27 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Upload from "../components/Upload";
 import VideoPlayer from "../components/VideoPlayer";
 import SubtitleEditor from "../components/SubtitleEditor";
 import TranscribeButton from "../components/TranscribeButton";
-import { Subtitle, VideoFile } from "../lib/types";
-import { downloadSRT } from "../lib/srtExporter";
+import { Subtitle, VideoFile, defaultSubtitleStyle } from "../lib/types";
 import { checkDevicePerformance } from "../lib/validators";
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<VideoFile | null>(null);
   const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
+  const [subtitleStyle, setSubtitleStyle] = useState(defaultSubtitleStyle);
+  const [subtitleOffset, setSubtitleOffset] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [showSlowDeviceWarning, setShowSlowDeviceWarning] = useState(false);
+
+  const subtitleOffsetRef = useRef(0);
+
+  useEffect(() => {
+    subtitleOffsetRef.current = subtitleOffset;
+  }, [subtitleOffset]);
 
   useEffect(() => {
     if (checkDevicePerformance() === false) {
@@ -49,15 +56,7 @@ export default function Home() {
     setSubtitles(newSubtitles);
   }, []);
 
-  const handleExportSRT = useCallback(() => {
-    if (subtitles.length === 0) return;
 
-    const filename = videoFile
-      ? videoFile.file.name.replace(/\.[^/.]+$/, "") + ".srt"
-      : "subtitles.srt";
-
-    downloadSRT(subtitles, filename);
-  }, [subtitles, videoFile]);
 
   const handleTimeUpdate = useCallback((time: number) => {
     setCurrentTime(time);
@@ -103,6 +102,8 @@ export default function Home() {
               <VideoPlayer
                 videoUrl={videoFile.url}
                 subtitles={subtitles}
+                style={subtitleStyle}
+                offsetSeconds={subtitleOffset}
                 onTimeUpdate={handleTimeUpdate}
               />
             </section>
@@ -120,20 +121,13 @@ export default function Home() {
 
             {subtitles.length > 0 && (
               <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                    4. Edit Subtitles
-                  </h2>
-                  <button
-                    onClick={handleExportSRT}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
-                  >
-                    Download SRT
-                  </button>
-                </div>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                  4. Edit Subtitles
+                </h2>
                 <SubtitleEditor
                   subtitles={subtitles}
                   onChange={setSubtitles}
+                  onOffsetChange={setSubtitleOffset}
                   currentTime={currentTime}
                 />
               </section>

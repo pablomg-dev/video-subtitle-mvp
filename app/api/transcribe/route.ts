@@ -48,9 +48,15 @@ export async function POST(request: NextRequest) {
 
     const transcriptionFormData = new FormData();
     transcriptionFormData.append("file", audioFile);
-    transcriptionFormData.append("model", "whisper-large-v3-turbo");
+    transcriptionFormData.append("model", "whisper-large-v3");
     transcriptionFormData.append("response_format", "verbose_json");
     transcriptionFormData.append("timestamp_granularities[]", "segment");
+    transcriptionFormData.append("temperature", "0");
+
+    const language = formData.get("language") as string | null;
+    if (language) {
+      transcriptionFormData.append("language", language);
+    }
 
     const response = await fetch(GROQ_API_URL, {
       method: "POST",
