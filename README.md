@@ -1,27 +1,29 @@
 # Video Subtitle MVP
 
-A minimal web app for automatic video subtitling with client-side Whisper integration.
+A minimal web app for automatic video subtitling using Groq API.
 
 ## Features
 
 - Upload video files (MP4, WebM, MOV)
-- Generate subtitles using real Whisper AI (tiny model)
+- Generate subtitles using Whisper AI via Groq API
 - Edit subtitle text
 - Export subtitles as SRT file
-- Client-side only (no backend required)
-- Device performance warning for slow machines
+- Client-side audio extraction with FFmpeg.wasm
 
 ## Requirements
 
-- Node.js 18+ 
-- Modern browser (Chrome, Firefox, Safari, Edge)
-- 4GB+ RAM recommended for Whisper transcription
+- Node.js 18+
+- Groq API key (free at https://console.groq.com)
+- Modern browser (Chrome recommended)
 
 ## Setup
 
 ```bash
 # Install dependencies
 npm install
+
+# Add your Groq API key to .env.local
+# Edit .env.local and replace "your_key_here" with your actual key
 
 # Run development server
 npm run dev
@@ -33,59 +35,54 @@ npm run dev
 
 1. **Upload**: Drop a video file or click to browse
 2. **Validate**: Files are checked for format, size (max 50MB), and duration (max 5 minutes)
-3. **Generate**: Click "Generate Subtitles" to create subtitles with Whisper AI
+3. **Generate**: Click "Generate Subtitles" to transcribe
 4. **Edit**: Modify subtitle text directly in the editor
 5. **Export**: Click "Download SRT" to save the subtitle file
 
-### Mock Mode
+### Mock Subtitles
 
-Enable "Use mock mode" checkbox to use fake subtitles for testing without AI.
+Click "Use mock subtitles" to test without API key.
 
 ## Project Structure
 
 ```
 ├── app/
-│   ├── globals.css       # Tailwind imports
-│   ├── layout.tsx        # Root layout
-│   └── page.tsx          # Main page
+│   ├── api/transcribe/route.ts  # Groq API proxy
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
 ├── components/
-│   ├── Upload.tsx        # Drag-drop file upload
-│   ├── VideoPlayer.tsx   # HTML5 video player
-│   └── SubtitleEditor.tsx # Editable subtitle list
+│   ├── Upload.tsx
+│   ├── VideoPlayer.tsx
+│   ├── SubtitleEditor.tsx
+│   └── TranscribeButton.tsx
 ├── lib/
-│   ├── types.ts          # TypeScript interfaces
-│   ├── utils.ts          # Time formatting
-│   ├── validators.ts     # File validation
-│   ├── mockTranscriber.ts # Mock transcription
-│   ├── whisperClient.ts  # Real Whisper transcription (client-only)
-│   └── srtExporter.ts    # SRT generation
+│   ├── types.ts
+│   ├── utils.ts
+│   ├── validators.ts
+│   ├── transcriber.ts
+│   └── srtExporter.ts
 ├── public/
-│   └── favicon.svg       # App favicon
-├── package.json
+│   └── favicon.svg
+├── .env.local
 └── README.md
 ```
 
-## Technical Details
+## API
 
-### Whisper Integration
+### POST /api/transcribe
 
-- Uses `@huggingface/transformers` for client-side inference
-- Model: `Xenova/whisper-tiny` (smallest, fastest)
-- Runs entirely in the browser using WebAssembly
-- Audio extracted from video and resampled to 16kHz mono
+Transcribes audio using Groq Whisper API.
 
-### SSR Compatibility
+**Request**: FormData with `audio` file (max 25MB WAV)
 
-The Whisper code uses dynamic imports to avoid Next.js SSR bundling issues:
-- Whisper code is in `lib/whisperClient.ts`
-- Imported dynamically only when user clicks "Generate Subtitles"
-- `webpack.IgnorePlugin` excludes problematic WASM modules from SSR
-
-## Build for Production
-
-```bash
-npm run build
-npm start
+**Response**:
+```json
+{
+  "subtitles": [
+    { "id": 1, "start": 0.0, "end": 2.5, "text": "Hello world" }
+  ]
+}
 ```
 
 ## Tech Stack
@@ -94,7 +91,8 @@ npm start
 - React 18
 - TypeScript
 - TailwindCSS
-- @huggingface/transformers
+- FFmpeg.wasm (audio extraction)
+- Groq API (transcription)
 
 ## License
 
